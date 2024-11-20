@@ -3,6 +3,8 @@ import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import javax.sound.sampled.*;
+import java.io.*;
 
 public class HelicopterForm implements MouseListener
 {
@@ -55,6 +57,20 @@ public class HelicopterForm implements MouseListener
 
         initiate();
     }
+
+    public void playSound(String soundFilePath) {
+        try {
+            // Load the sound file
+            File soundFile = new File(soundFilePath);
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundFile);
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioIn);
+            clip.start();
+        } catch (Exception e) {
+            System.out.println("Error playing sound: " + e.getMessage());
+        }
+    }
+    
 
     public void load(File file)
     {
@@ -289,6 +305,7 @@ public class HelicopterForm implements MouseListener
     public void crash()
     {
         crashed = true;
+        playSound("sad.wav");
         if(distance > maxDistance) 
         {
             maxDistance = distance;
@@ -304,6 +321,7 @@ public class HelicopterForm implements MouseListener
         upCount += .08;
         if(goingUp)
         {
+            playSound("start_sound.wav");
             if(upCount < 3.5)
                 helicopter.setPosition(XPOS,(double)(helicopter.getY() - (.3 + upCount)));
             else
@@ -356,6 +374,7 @@ public class HelicopterForm implements MouseListener
             started = true;
         goingUp = true;
         upCount = 0;
+        playSound("start_sound.wav");  
     }
 
     //Called when the mouse is released
