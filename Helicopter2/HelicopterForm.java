@@ -4,7 +4,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import javax.sound.sampled.*;
-import java.io.*;
+import javax.swing.Timer;
 
 public class HelicopterForm implements MouseListener
 {
@@ -44,6 +44,9 @@ public class HelicopterForm implements MouseListener
     private ArrayList<MovingImage> smoke;
     private MovingImage helicopter;
 
+    private static final int DISTANCE_THRESHOLD = 100;
+    private boolean thresholdReached = false;
+
     public HelicopterForm()
     {
         NUMRECS = 28;
@@ -56,6 +59,10 @@ public class HelicopterForm implements MouseListener
         load(new File("Best.txt"));
 
         initiate();
+        playSound("start_sound.wav");
+        background.addMouseListener(this);
+
+        triggerSpecialEvent();
     }
 
     public void playSound(String soundFilePath) {
@@ -126,6 +133,18 @@ public class HelicopterForm implements MouseListener
         crashed = false;
         started = false;
 
+        // Play the start sound immediately
+        playSound("start_sound.wav");
+
+        // Set up a timer to play the start sound every 9 seconds
+        Timer timer = new Timer(9000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                playSound("start_sound.wav");
+            }
+        });
+        timer.start();
+
         distance = 0;
         upCount = 0;
 
@@ -158,12 +177,21 @@ public class HelicopterForm implements MouseListener
         long lastSmoke = System.currentTimeMillis();
         int firstUpdates = 0;
         double lastDistance = (double)System.currentTimeMillis();
+        boolean specialEventTriggered = false;
+
         while(true)
         {
             if(!paused && !crashed && started && (double)System.currentTimeMillis() - (double)(2900/40) > lastDistance)
             {   
                 lastDistance = System.currentTimeMillis();
                 distance++;
+                if (distance > 100 && !specialEventTriggered) {
+                    triggerSpecialEvent();
+                    specialEventTriggered = true; // Prevent multiple triggers
+                    back = new ImagePanel("party.JPG");
+                    background.add(back);
+                }
+    
             }   
 
             if(!paused && !crashed && started && System.currentTimeMillis() - 10 > lastCopter)
@@ -183,15 +211,15 @@ public class HelicopterForm implements MouseListener
                 if (firstUpdates < numSmoke)
                 {
                     firstUpdates++;
-                    smoke.add(new MovingImage("smoke.GIF",187,helicopter.getY()));
+                    smoke.add(new MovingImage("mango.jpg",187,helicopter.getY()));
                     for(int x = 0; x < firstUpdates; x++)
-                        smoke.set(x,new MovingImage("smoke.GIF",smoke.get(x).getX() - 12, smoke.get(x).getY()));
+                        smoke.set(x,new MovingImage("mango.jpg",smoke.get(x).getX() - 12, smoke.get(x).getY()));
                 }
                 else
                 {
                     for(int x = 0; x < numSmoke - 1; x++)
                         smoke.get(x).setY(smoke.get(x+1).getY());
-                    smoke.set(numSmoke - 1,new MovingImage("smoke.GIF",187,helicopter.getY()));
+                    smoke.set(numSmoke - 1,new MovingImage("mango.jpg",187,helicopter.getY()));
                 }
                     }
                     back.updateImages(toprecs,middlerecs,bottomrecs,helicopter,smoke);
@@ -319,21 +347,21 @@ public class HelicopterForm implements MouseListener
     public void updateCopter()
     {
         upCount += .08;
+        double speedMultiplier = 1.5; // Increase the speed by 50%
         if(goingUp)
         {
-            playSound("start_sound.wav");
             if(upCount < 3.5)
-                helicopter.setPosition(XPOS,(double)(helicopter.getY() - (.3 + upCount)));
+                helicopter.setPosition(XPOS, helicopter.getY() - (.3 + upCount) * speedMultiplier);
             else
-                helicopter.setPosition(XPOS,(double)(helicopter.getY() - (1.2 + upCount)));
+                helicopter.setPosition(XPOS, helicopter.getY() - (1.2 + upCount) * speedMultiplier);
             helicopter.setImage("theodore.jpg");    
         }
         else
         {
             if(upCount < 1)
-                helicopter.setPosition(XPOS,(double)(helicopter.getY() + upCount));
+                helicopter.setPosition(XPOS, helicopter.getY() + upCount * speedMultiplier);
             else
-                helicopter.setPosition(XPOS,(double)(helicopter.getY() + (1.2 + upCount)));
+                helicopter.setPosition(XPOS, helicopter.getY() + (1.2 + upCount) * speedMultiplier);
             helicopter.setImage("theodore.jpg");
         }
         if(isHit())
@@ -374,7 +402,16 @@ public class HelicopterForm implements MouseListener
             started = true;
         goingUp = true;
         upCount = 0;
-        playSound("start_sound.wav");  
+        //playSound("start_sound.wav");
+        
+    }
+
+    public void triggerSpecialEvent()
+    {
+        if (distance > DISTANCE_THRESHOLD && !thresholdReached) {
+            thresholdReached = true;
+            playSound("special.wav");
+        }
     }
 
     //Called when the mouse is released
@@ -443,12 +480,12 @@ class ImagePanel extends JPanel {
     public void drawStrings(Graphics g)
     {
         g.setFont(new Font("Arial",Font.BOLD,20));
-        g.drawString("Distance: " + HelicopterForm.distance,30,500);
+        g.drawString("Distance: " + HelicopterForm.distance,30,200);
         g.setFont(new Font("Arial",Font.BOLD,20));
         if (HelicopterForm.distance > HelicopterForm.maxDistance)
-            g.drawString("Best: " + HelicopterForm.distance,650,500);
+            g.drawString("Best: " + HelicopterForm.distance,650,200);
         else
-            g.drawString("Best: " + HelicopterForm.maxDistance,650,500);
+            g.drawString("Best: " + HelicopterForm.maxDistance,650,200);
         if(HelicopterForm.paused)
         {
                 g.setColor(Color.WHITE);
